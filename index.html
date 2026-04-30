@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chromatch — Multiplayer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #080810;
+  --surface:  #11111c;
+  --surface2: #191926;
+  --surface3: #22223a;
+  --border:   rgba(255,255,255,0.07);
+  --border2:  rgba(255,255,255,0.12);
+  --text:     #f0eeff;
+  --muted:    #6b6a80;
+  --muted2:   #9998b0;
+  --accent:   #a78bfa;
+  --accent2:  #34d399;
+  --danger:   #f87171;
+  --warn:     #fbbf24;
+  --gold:     #f59e0b;
+  --silver:   #94a3b8;
+  --bronze:   #b45309;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Syne', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 20px 16px 40px;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 40% at 20% 0%, rgba(167,139,250,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 30% at 80% 100%, rgba(52,211,153,0.04) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.logo {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+.logo span { color: var(--accent); }
+.logo small {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--muted);
+  vertical-align: super;
+  margin-left: 4px;
+}
+
+.conn-badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  border: 1px solid var(--border2);
+  color: var(--muted);
+  transition: all 0.3s;
+}
+.conn-badge.connected { color: var(--accent2); border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.07); }
+.conn-badge.error     { color: var(--danger);  border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.07); }
+
+/* ── Screens ── */
+.screen { display: none; flex-direction: column; gap: 12px; animation: fadeUp 0.25s ease; }
+.screen.active { display: flex; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Cards ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 10px 14px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-body { padding: 14px; }
+
+/* ── Inputs ── */
+.field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+.field:last-child { margin-bottom: 0; }
+
+.field label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.field input {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+
+.field input:focus { border-color: var(--accent); }
+.field input::placeholder { color: var(--muted); font-weight: 400; }
+
+/* ── Buttons ── */
+.btn {
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: 12px;
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.3px;
+}
+.btn:active { transform: scale(0.98); }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.btn-primary  { background: var(--accent); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: #9165f0; }
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text);
+}
+.btn-secondary:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+
+.btn-green  { background: var(--accent2); color: #000; }
+.btn-green:hover:not(:disabled) { filter: brightness(1.1); }
+
+.btn-danger { background: transparent; border: 1px solid rgba(248,113,113,0.3); color: var(--danger); }
+.btn-danger:hover:not(:disabled) { background: rgba(248,113,113,0.08); }
+
+.btn-sm {
+  width: auto;
+  padding: 7px 14px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+/* ── Divider ── */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── Lobby ── */
+.room-code {
+  font-family: 'Space Mono', monospace;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  color: var(--accent);
+  text-align: center;
+  padding: 16px;
+  background: var(--surface2);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  border: 1px dashed rgba(167,139,250,0.3);
+  cursor: pointer;
+  user-select: all;
+  transition: background 0.2s;
+}
+.room-code:hover { background: var(--surface3); }
+.room-code.copied::after { content: ' ✓'; font-size: 16px; color: var(--accent2); }
+
+.copy-hint {
+  text-align: center;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: -6px;
+  margin-bottom: 8px;
+}
+
+.player-list { display: flex; flex-direction: column; gap: 6px; }
+
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--surface2);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  transition: border-color 0.2s;
+  animation: fadeUp 0.2s ease;
+}
+.player-row.host { border-color: rgba(167,139,250,0.25); }
+.player-row.ready-glow { border-color: rgba(52,211,153,0.3); }
+
+.player-avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--surface3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+.player-name { flex: 1; font-size: 13px; font-weight: 700; }
+
+.player-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 99px;
+}
+.badge-host  { background: rgba(167,139,250,0.15); color: var(--accent); }
+.badge-you   { background: rgba(52,211,153,0.12);  color: var(--accent2); }
+.badge-ready { background: rgba(52,211,153,0.12);  color: var(--accent2); }
+.badge-wait  { background: rgba(107,106,128,0.2);  color: var(--muted); }
+
+/* ── Diff buttons ── */
+.diff-row { display: flex; gap: 6px; }
+.diff-btn {
+  flex: 1; padding: 8px 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--muted2);
+  font-family: 'Syne', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+.diff-btn:hover  { border-color: var(--accent); color: var(--text); }
+.diff-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.diff-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ── Game screen ── */
+.panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.panel { border-radius: 14px; overflow: hidden; background: var(--surface); border: 1px solid var(--border); }
+.panel-label { padding: 8px 12px; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); }
+.color-swatch { aspect-ratio: 1; transition: background 0.3s ease; position: relative; }
+
+.hidden-overlay {
+  position: absolute; inset: 0;
+  background: var(--surface2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.hidden-overlay.visible { opacity: 1; }
+
+.countdown-overlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 32px; font-weight: 700;
+  color: white;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+}
+.countdown-overlay.visible { opacity: 1; }
+
+.phase-label {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted); text-align: center;
+  min-height: 15px;
+}
+.phase-label.preview { color: var(--warn); }
+.phase-label.guess   { color: var(--accent2); }
+
+.timer-wrap { background: var(--surface); border-radius: 99px; height: 5px; border: 1px solid var(--border); overflow: hidden; }
+#timerBar { height: 100%; border-radius: 99px; background: var(--accent); width: 100%; transition: width linear, background 0.3s; }
+
+/* Picker */
+.picker-card { background: var(--surface); border-radius: 16px; border: 1px solid var(--border); overflow: hidden; transition: opacity 0.3s; }
+.picker-card.locked { opacity: 0.4; pointer-events: none; }
+
+.picker-card-header {
+  padding: 9px 14px; font-size: 10px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--muted); border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+#pickerHex { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--accent); }
+
+.canvas-wrap { position: relative; padding: 12px 12px 0; }
+#picker { width: 100%; aspect-ratio: 1; border-radius: 10px; cursor: crosshair; display: block; touch-action: none; }
+#pointer {
+  position: absolute; width: 14px; height: 14px;
+  border: 2.5px solid white; border-radius: 50%;
+  transform: translate(-50%, -50%); pointer-events: none;
+  box-shadow: 0 0 0 1.5px rgba(0,0,0,0.5);
+}
+
+.hue-wrap { padding: 10px 12px; }
+#hue {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 13px; border-radius: 99px;
+  background: linear-gradient(to right,
+    hsl(0,100%,50%), hsl(30,100%,50%), hsl(60,100%,50%),
+    hsl(90,100%,50%), hsl(120,100%,50%), hsl(150,100%,50%),
+    hsl(180,100%,50%), hsl(210,100%,50%), hsl(240,100%,50%),
+    hsl(270,100%,50%), hsl(300,100%,50%), hsl(330,100%,50%),
+    hsl(360,100%,50%));
+  outline: none; cursor: pointer; border: 1px solid var(--border);
+}
+#hue::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  cursor: pointer; border: 2px solid rgba(0,0,0,0.2);
+}
+#hue::-moz-range-thumb {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  cursor: pointer; border: 2px solid rgba(0,0,0,0.2); border: none;
+}
+
+/* ── Opponent scores live strip ── */
+.live-scores {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.opponent-chip {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 9px;
+  background: var(--surface2);
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  font-size: 11px;
+  transition: border-color 0.3s, background 0.3s;
+  animation: fadeUp 0.2s ease;
+}
+.opponent-chip.submitted { border-color: rgba(52,211,153,0.4); background: rgba(52,211,153,0.06); }
+.opponent-chip .chip-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--muted); flex-shrink: 0;
+  transition: background 0.3s;
+}
+.opponent-chip.submitted .chip-dot { background: var(--accent2); }
+.opponent-chip .chip-name { font-weight: 700; color: var(--muted2); }
+.opponent-chip .chip-score { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--accent2); }
+
+/* ── Results / Leaderboard ── */
+.leaderboard { display: flex; flex-direction: column; gap: 6px; }
+
+.lb-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  animation: fadeUp 0.3s ease both;
+  transition: border-color 0.3s;
+}
+.lb-row.rank-1 { border-color: rgba(245,158,11,0.5); background: rgba(245,158,11,0.06); }
+.lb-row.rank-2 { border-color: rgba(148,163,184,0.4); }
+.lb-row.rank-3 { border-color: rgba(180,83,9,0.4); }
+.lb-row.is-you { outline: 1px solid var(--accent); outline-offset: 1px; }
+
+.lb-rank {
+  font-family: 'Space Mono', monospace;
+  font-size: 13px; font-weight: 700;
+  width: 22px; text-align: center;
+  flex-shrink: 0;
+}
+.rank-1 .lb-rank { color: var(--gold); }
+.rank-2 .lb-rank { color: var(--silver); }
+.rank-3 .lb-rank { color: var(--bronze); }
+
+.lb-name { flex: 1; font-size: 13px; font-weight: 700; }
+.lb-bar-wrap { flex: 1; max-width: 90px; height: 5px; background: var(--surface3); border-radius: 99px; overflow: hidden; }
+.lb-bar { height: 100%; border-radius: 99px; background: var(--accent2); transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1); }
+.lb-score { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; color: var(--accent2); min-width: 36px; text-align: right; }
+.lb-de { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); min-width: 34px; text-align: right; }
+
+/* target reveal in results */
+.target-reveal {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+.tr-swatch { width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0; }
+.tr-info { flex: 1; }
+.tr-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); font-weight: 700; margin-bottom: 3px; }
+.tr-hex { font-family: 'Space Mono', monospace; font-size: 14px; color: var(--text); font-weight: 700; }
+
+/* ── Error toast ── */
+.toast {
+  position: fixed;
+  bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--danger);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  z-index: 999;
+  pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── Misc ── */
+.text-muted { color: var(--muted); font-size: 12px; }
+.text-center { text-align: center; }
+.mt-4 { margin-top: 4px; }
+.section-title { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+
+.your-score-mini {
+  text-align: center;
+  padding: 12px;
+  background: var(--surface2);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+.your-score-mini .num {
+  font-size: 42px; font-weight: 800;
+  letter-spacing: -2px; line-height: 1;
+}
+.your-score-mini .lbl { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">Chro<span>match</span><small>MULTI</small></div>
+    <div class="conn-badge" id="connBadge">OFFLINE</div>
+  </div>
+
+  <!-- ══════════════════ CONNECT SCREEN ══════════════════ -->
+  <div class="screen active" id="screenConnect">
+    <div class="card">
+      <div class="card-header">Connect to server</div>
+      <div class="card-body">
+        <div class="field">
+          <label>WebSocket URL</label>
+          <input id="wsUrl" value="wss://chromatch.onrender.com" placeholder="wss://…">
+        </div>
+        <div class="field">
+          <label>Your name</label>
+          <input id="playerName" placeholder="Enter your name" maxlength="20">
+        </div>
+        <button class="btn btn-primary" id="connectBtn">Connect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ LOBBY SELECTION ══════════════════ -->
+  <div class="screen" id="screenLobbySelect">
+    <div class="card">
+      <div class="card-header">Create a room</div>
+      <div class="card-body">
+        <div class="section-title" style="margin-bottom:8px">Preview time</div>
+        <div class="diff-row" id="lobbyDiff">
+          <button class="diff-btn" data-time="5">Easy</button>
+          <button class="diff-btn active" data-time="3">Medium</button>
+          <button class="diff-btn" data-time="1.5">Hard</button>
+          <button class="diff-btn" data-time="0.5">Pro</button>
+        </div>
+        <div style="margin-top:12px">
+          <button class="btn btn-primary" id="createRoomBtn">Create Room</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider">OR</div>
+
+    <div class="card">
+      <div class="card-header">Join a room</div>
+      <div class="card-body">
+        <div class="field">
+          <label>Room code</label>
+          <input id="joinCode" placeholder="e.g. AB3XY" maxlength="5" style="text-transform:uppercase;letter-spacing:3px;font-family:'Space Mono',monospace;font-size:16px">
+        </div>
+        <button class="btn btn-secondary" id="joinRoomBtn">Join Room</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ LOBBY ROOM ══════════════════ -->
+  <div class="screen" id="screenLobby">
+    <div class="card">
+      <div class="card-header">
+        <span>Room Code — share with friends</span>
+        <button class="btn btn-sm btn-secondary" id="leaveBtn">Leave</button>
+      </div>
+      <div class="card-body">
+        <div class="room-code" id="roomCode" title="Click to copy">------</div>
+        <div class="copy-hint">Tap to copy</div>
+        <div class="player-list" id="playerList"></div>
+      </div>
+    </div>
+
+    <div class="card" id="diffCard">
+      <div class="card-header">Difficulty (host only)</div>
+      <div class="card-body">
+        <div class="diff-row" id="roomDiff">
+          <button class="diff-btn" data-time="5">Easy</button>
+          <button class="diff-btn active" data-time="3">Medium</button>
+          <button class="diff-btn" data-time="1.5">Hard</button>
+          <button class="diff-btn" data-time="0.5">Pro</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-green" id="startBtn" disabled>Waiting for players…</button>
+    <button class="btn btn-secondary" id="readyBtn">Ready</button>
+  </div>
+
+  <!-- ══════════════════ GAME SCREEN ══════════════════ -->
+  <div class="screen" id="screenGame">
+
+    <!-- Opponent status strip -->
+    <div class="card">
+      <div class="card-header">Opponents</div>
+      <div class="card-body" style="padding:10px">
+        <div class="live-scores" id="liveScores"></div>
+      </div>
+    </div>
+
+    <!-- Swatches -->
+    <div class="panels">
+      <div class="panel">
+        <div class="panel-label">Target</div>
+        <div class="color-swatch" id="targetSwatch">
+          <div class="hidden-overlay" id="targetOverlay">👁</div>
+          <div class="countdown-overlay" id="countdownOverlay"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Your pick</div>
+        <div class="color-swatch" id="previewSwatch"></div>
+      </div>
+    </div>
+
+    <div class="phase-label" id="phaseLabel"></div>
+    <div class="timer-wrap"><div id="timerBar"></div></div>
+
+    <!-- Picker -->
+    <div class="picker-card locked" id="pickerCard">
+      <div class="picker-card-header">
+        <span>Color Picker</span>
+        <span id="pickerHex">#808080</span>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="picker"></canvas>
+        <div id="pointer"></div>
+      </div>
+      <div class="hue-wrap">
+        <input type="range" id="hue" min="0" max="360" value="0">
+      </div>
+    </div>
+
+    <button class="btn btn-green" id="submitBtn" disabled>Submit Guess</button>
+  </div>
+
+  <!-- ══════════════════ RESULTS SCREEN ══════════════════ -->
+  <div class="screen" id="screenResults">
+    <div class="card">
+      <div class="card-header">Round Result</div>
+      <div class="card-body">
+        <div class="target-reveal">
+       
